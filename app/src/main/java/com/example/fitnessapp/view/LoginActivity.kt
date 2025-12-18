@@ -11,7 +11,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Facebook
@@ -23,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -70,7 +70,7 @@ fun LoginBody(userViewModel: UserViewModel?, onLoginSuccess: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            Image(painter = painterResource(id = R.drawable.img), // Using your added logo
+            Image(painter = painterResource(id = R.drawable.img),
                 contentDescription = "FitLife Logo",
                 modifier = Modifier.size(150.dp).padding(bottom = 20.dp))
 
@@ -82,7 +82,7 @@ fun LoginBody(userViewModel: UserViewModel?, onLoginSuccess: () -> Unit) {
             OutlinedTextField(
                 value = email,
                 onValueChange = { data -> email = data },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email Icon")},
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email Icon") },
                 placeholder = { Text("example@gmail.com") },
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = LightGray,
@@ -124,7 +124,12 @@ fun LoginBody(userViewModel: UserViewModel?, onLoginSuccess: () -> Unit) {
 
             Text(
                 "Forgot your password?",
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { 
+                        val intent = Intent(context, ForgotPasswordActivity::class.java)
+                        context.startActivity(intent)
+                    },
                 style = TextStyle(textAlign = TextAlign.End, color = FitLifeGreen, fontWeight = FontWeight.SemiBold)
             )
 
@@ -153,7 +158,7 @@ fun LoginBody(userViewModel: UserViewModel?, onLoginSuccess: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
 
             Row {
-                Text("Don't have an account? ")
+                Text("Don\'t have an account? ")
                 Text("Register", color = FitLifeGreen, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
                     val intent = Intent(context, RegistrationActivity::class.java)
                     context.startActivity(intent)
@@ -170,18 +175,16 @@ fun LoginBody(userViewModel: UserViewModel?, onLoginSuccess: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                SocialMediaCard(label = "Facebook")
+                SocialMediaCard(icon = Icons.Default.Facebook)
                 Spacer(modifier = Modifier.width(16.dp))
-                SocialMediaCard(label = "Gmail")
-                Spacer(modifier = Modifier.width(16.dp))
-                SocialMediaCard(label = "Twitter")
+                SocialMediaCard(icon = Icons.Default.Email)
             }
         }
     }
 }
 
 @Composable
-fun SocialMediaCard(label: String) {
+fun SocialMediaCard(icon: ImageVector) {
     Card(
         modifier = Modifier.size(50.dp),
         shape = RoundedCornerShape(12.dp),
@@ -189,11 +192,7 @@ fun SocialMediaCard(label: String) {
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Icon(
-                imageVector = when(label) {
-                    "Facebook" -> Icons.Filled.Facebook
-                    "Gmail" -> Icons.Filled.Email
-                    else -> Icons.Filled.Email // Replace with Twitter icon
-                },
+                imageVector = icon,
                 contentDescription = null,
                 tint = FitLifeGreen
             )

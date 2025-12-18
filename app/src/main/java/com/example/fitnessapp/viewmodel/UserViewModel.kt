@@ -1,28 +1,76 @@
 package com.example.fitnessapp.viewmodel
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.fitnessapp.model.UserModel
 import com.example.fitnessapp.repository.UserRepository
+import com.google.firebase.auth.FirebaseUser
 
-class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
+class UserViewModel(val repo: UserRepository) : ViewModel() {
 
-    fun login(email: String, password: String, callback: (Boolean, String?) -> Unit) {
-        userRepository.login(email, password, callback)
+    fun login(
+        email: String, password: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        repo.login(email, password, callback)
     }
 
     fun register(
-        email: String,
-        password: String,
-        callback: (Boolean, String?, String?) -> Unit
+        email: String, password: String,
+        callback: (Boolean, String, String) -> Unit
     ) {
-        userRepository.register(email, password, callback)
+        repo.register(email, password, callback)
+    }
+
+    fun forgetPassword(email: String, callback: (Boolean, String) -> Unit) {
+        repo.forgetPassword(email, callback)
     }
 
     fun addUserToDatabase(
-        userId: String,
-        userModel: UserModel,
-        callback: (Boolean, String?) -> Unit
+        userId: String, model: UserModel,
+        callback: (Boolean, String) -> Unit
     ) {
-        userRepository.addUserToDatabase(userId, userModel, callback)
+        repo.addUserToDatabase(userId, model, callback)
+    }
+
+    private val _users = MutableLiveData<UserModel?>()
+    val users: MutableLiveData<UserModel?>
+        get() = _users
+
+    private val _allUsers = MutableLiveData<List<UserModel>?>()
+    val allUsers: MutableLiveData<List<UserModel>?>
+        get() = _allUsers
+
+    fun getUserById(userId: String) {
+        repo.getUserById(userId) {
+            success, user ->
+            if (success) {
+                _users.postValue(user)
+            }
+        }
+    }
+
+    fun getAllUser() {
+        repo.getAllUser {
+            success, data ->
+            if (success) {
+                _allUsers.postValue(data)
+            }
+        }
+    }
+
+    fun getCurrentUser(): FirebaseUser? {
+        return repo.getCurrentUser()
+    }
+
+    fun deleteUser(userId: String, callback: (Boolean, String) -> Unit) {
+        repo.deleteUser(userId, callback)
+    }
+
+    fun updateProfile(
+        userId: String, model: UserModel,
+        callback: (Boolean, String) -> Unit
+    ) {
+        repo.updateProfile(userId, model, callback)
     }
 }

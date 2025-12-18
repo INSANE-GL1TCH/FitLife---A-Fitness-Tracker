@@ -1,10 +1,16 @@
 package com.example.fitnessapp.model
 
 data class UserModel(
-    val userId: String? = null,
-    val email: String? = null,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val dob: String? = null,
-    val contact: String? = null
-)
+    val userId: String = "",
+    val email: String = "",
+    val firstName: String = "",
+    val lastName: String = "",
+    val contact: String = "",
+    val dob: String = "",
+) {
+    fun toMap(): Map<String, Any?> {
+        return mapOf(
+            "contact" to contact
+        )
+    }
+}

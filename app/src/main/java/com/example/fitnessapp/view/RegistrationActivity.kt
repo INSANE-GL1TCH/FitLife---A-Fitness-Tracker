@@ -1,5 +1,7 @@
 package com.example.fitnessapp.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -10,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -23,9 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,7 +75,7 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
             verticalArrangement = Arrangement.Center
         ) {
 
-            Image(painter = painterResource(id = R.drawable.img), // Using your added logo
+            Image(painter = painterResource(id = R.drawable.img),
                 contentDescription = "FitLife Logo",
                 modifier = Modifier.size(150.dp).padding(bottom = 20.dp))
 
@@ -173,12 +179,9 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
                             success, message, userId ->
                             if (success) {
                                 val model = UserModel(
-                                    userId = userId,
+                                    userId = userId.orEmpty(),
                                     email = email,
-                                    firstName = fullName,
-                                    lastName = "",
-                                    dob = "",
-                                    contact = ""
+                                    firstName = fullName
                                 )
                                 userViewModel.addUserToDatabase(userId.orEmpty(), model) {
                                     addSuccess, addMessage ->

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "312414830608",
+    "project_id": "homework-a374d",
+    "storage_bucket": "homework-a374d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:312414830608:android:e7ded50902f1106d8dca95",
+        "android_client_info": {
+          "package_name": "com.example.fitnessapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0iEABsADVQAXxERt7Id3AAvWOn5Abdsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
