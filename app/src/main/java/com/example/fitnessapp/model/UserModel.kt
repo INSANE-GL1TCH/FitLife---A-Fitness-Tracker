@@ -10,7 +10,10 @@ data class UserModel(
 ) {
     fun toMap(): Map<String, Any?> {
         return mapOf(
-            "contact" to contact
+            "firstName" to firstName,
+            "lastName" to lastName,
+            "contact" to contact,
+            "dob" to dob
         )
     }
 }
