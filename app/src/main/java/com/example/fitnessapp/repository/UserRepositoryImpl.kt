@@ -1,18 +1,18 @@
 package com.example.fitnessapp.repository
 
+import com.example.fitnessapp.model.BmiModel
+import com.example.fitnessapp.model.CalorieModel
 import com.example.fitnessapp.model.UserModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 
 class UserRepositoryImpl : UserRepository {
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
     val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-    val ref: DatabaseReference = database.getReference("Users")
+    val userRef: DatabaseReference = database.getReference("Users")
+    val bmiRef: DatabaseReference = database.getReference("BmiData")
+    val calorieRef: DatabaseReference = database.getReference("CalorieData")
 
     override fun login(
         email: String,
@@ -25,7 +25,6 @@ class UserRepositoryImpl : UserRepository {
                     callback(true, "Login success")
                 } else {
                     callback(false, "${it.exception?.message}")
-
                 }
             }
     }
@@ -40,7 +39,6 @@ class UserRepositoryImpl : UserRepository {
                     callback(true, "Reset email sent to $email")
                 } else {
                     callback(false, "${it.exception?.message}")
-
                 }
             }
     }
@@ -65,7 +63,7 @@ class UserRepositoryImpl : UserRepository {
         model: UserModel,
         callback: (Boolean, String) -> Unit
     ) {
-        ref.child(userId).setValue(model).addOnCompleteListener {
+        userRef.child(userId).setValue(model).addOnCompleteListener {
             if (it.isSuccessful) {
                 callback(true, "User registered successfully")
             } else {
@@ -78,7 +76,7 @@ class UserRepositoryImpl : UserRepository {
         userId: String,
         callback: (Boolean, UserModel?) -> Unit
     ) {
-        ref.child(userId).addValueEventListener(object : ValueEventListener {
+        userRef.child(userId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     val user = snapshot.getValue(UserModel::class.java)
@@ -95,7 +93,7 @@ class UserRepositoryImpl : UserRepository {
     }
 
     override fun getAllUser(callback: (Boolean, List<UserModel>?) -> Unit) {
-        ref.addValueEventListener(object : ValueEventListener {
+        userRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     var allUsers = mutableListOf<UserModel>()
@@ -123,7 +121,7 @@ class UserRepositoryImpl : UserRepository {
         userId: String,
         callback: (Boolean, String) -> Unit
     ) {
-        ref.child(userId).removeValue().addOnCompleteListener {
+        userRef.child(userId).removeValue().addOnCompleteListener {
             if (it.isSuccessful) {
                 callback(true, "User deleted successfully")
             } else {
@@ -137,12 +135,88 @@ class UserRepositoryImpl : UserRepository {
         model: UserModel,
         callback: (Boolean, String) -> Unit
     ) {
-        ref.child(userId).updateChildren(model.toMap()).addOnCompleteListener {
+        userRef.child(userId).updateChildren(model.toMap()).addOnCompleteListener {
             if (it.isSuccessful) {
                 callback(true, "Profile updated successfully")
             } else {
                 callback(false, "${it.exception?.message}")
             }
+        }
+    }
+
+    override fun updateEmail(newEmail: String, callback: (Boolean, String) -> Unit) {
+        auth.currentUser?.updateEmail(newEmail)?.addOnCompleteListener {
+            if (it.isSuccessful) {
+                callback(true, "Email updated in Auth")
+            } else {
+                callback(false, it.exception?.message ?: "Email update failed")
+            }
+        }
+    }
+
+    override fun updatePassword(newPassword: String, callback: (Boolean, String) -> Unit) {
+        auth.currentUser?.updatePassword(newPassword)?.addOnCompleteListener {
+            if (it.isSuccessful) {
+                callback(true, "Password updated")
+            } else {
+                callback(false, it.exception?.message ?: "Password update failed")
+            }
+        }
+    }
+
+    // BMI CRUD
+    override fun saveBmiData(model: BmiModel, callback: (Boolean, String) -> Unit) {
+        val id = bmiRef.push().key.toString()
+        val dataWithId = model.copy(bmiId = id)
+        bmiRef.child(id).setValue(dataWithId).addOnCompleteListener {
+            if (it.isSuccessful) callback(true, "BMI saved") else callback(false, it.exception?.message ?: "Error")
+        }
+    }
+
+    override fun getBmiDataByUserId(userId: String, callback: (Boolean, List<BmiModel>?) -> Unit) {
+        bmiRef.orderByChild("userId").equalTo(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<BmiModel>()
+                for (data in snapshot.children) {
+                    data.getValue(BmiModel::class.java)?.let { list.add(it) }
+                }
+                callback(true, list)
+            }
+            override fun onCancelled(error: DatabaseError) = callback(false, null)
+        })
+    }
+
+    override fun deleteBmiData(bmiId: String, callback: (Boolean, String) -> Unit) {
+        bmiRef.child(bmiId).removeValue().addOnCompleteListener {
+            if (it.isSuccessful) callback(true, "BMI record deleted") else callback(false, it.exception?.message ?: "Error")
+        }
+    }
+
+    // Calorie CRUD
+    override fun saveCalorieData(model: CalorieModel, callback: (Boolean, String) -> Unit) {
+        val id = calorieRef.push().key.toString()
+        val dataWithId = model.copy(calorieId = id)
+        calorieRef.child(id).setValue(dataWithId).addOnCompleteListener {
+            if (it.isSuccessful) callback(true, "Calories saved") else callback(false, it.exception?.message ?: "Error")
+        }
+    }
+
+    override fun getCalorieDataByUserId(userId: String, callback: (Boolean, List<CalorieModel>?) -> Unit) {
+        calorieRef.orderByChild("userId").equalTo(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val list = mutableListOf<CalorieModel>()
+                for (data in snapshot.children) {
+                    data.getValue(CalorieModel::class.java)?.let { list.add(it) }
+                }
+                callback(true, list)
+            }
+            override fun onCancelled(error: DatabaseError) = callback(false, null)
+        })
+    }
+
+    override fun deleteCalorieData(calorieId: String, callback: (Boolean, String) -> Unit) {
+        calorieRef.child(calorieId).removeValue().addOnCompleteListener {
+            if (it.isSuccessful) callback(true, "Calorie record deleted") else callback(false, it.exception?.message ?: "Error")
         }
     }
 }
