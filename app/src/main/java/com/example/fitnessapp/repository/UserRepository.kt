@@ -5,6 +5,9 @@ import com.example.fitnessapp.model.CalorieModel
 import com.example.fitnessapp.model.UserModel
 import com.google.firebase.auth.FirebaseUser
 
+/**
+ * Repository interface for managing user authentication and fitness data.
+ */
 interface UserRepository {
     fun login(email: String, password: String, callback: (Boolean, String) -> Unit)
 
@@ -33,7 +36,6 @@ interface UserRepository {
         callback: (Boolean, String) -> Unit
     )
 
-    // New methods for security updates
     fun updateEmail(newEmail: String, callback: (Boolean, String) -> Unit)
     fun updatePassword(newPassword: String, callback: (Boolean, String) -> Unit)
 
