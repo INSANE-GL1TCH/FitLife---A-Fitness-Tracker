@@ -4,13 +4,13 @@ data class CalorieModel(
     val calorieId: String = "",
     val userId: String = "",
     val mealName: String = "",
-    val mealCategory: String = "Snack", // e.g., Breakfast, Lunch, Dinner, Snack
+    val mealCategory: String = "Snack",
     val calorieGoal: String = "2000",
     val protein: String = "",
     val carbs: String = "",
     val fat: String = "",
     val totalCalories: String = "",
-    val date: String = "" // Format: dd MMM yyyy
+    val date: String = ""
 ) {
     fun toMap(): Map<String, Any?> {
         return mapOf(
@@ -23,5 +23,9 @@ data class CalorieModel(
             "totalCalories" to totalCalories,
             "date" to date
         )
+    }
+
+    fun isMainMeal(): Boolean {
+        return mealCategory in listOf("Breakfast", "Lunch", "Dinner")
     }
 }
