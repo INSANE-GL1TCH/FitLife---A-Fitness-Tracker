@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -115,6 +116,7 @@ fun DashboardScreen(userViewModel: UserViewModel?) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(userViewModel: UserViewModel) {
     val context = LocalContext.current
@@ -128,6 +130,8 @@ fun HomeScreen(userViewModel: UserViewModel) {
     var carbs by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
     var calorieGoal by remember { mutableStateOf("2000") }
+    var selectedCategory by remember { mutableStateOf("Breakfast") }
+    val categories = listOf("Breakfast", "Lunch", "Dinner", "Snack")
 
     val calorieHistory by userViewModel.calorieData.observeAsState(emptyList())
     val todayDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
@@ -241,10 +245,26 @@ fun HomeScreen(userViewModel: UserViewModel) {
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Text("Log a Meal", fontWeight = FontWeight.Bold, color = FitLifeGreen)
+                
+                // Category Chips
+                FlowRow(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    categories.forEach { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = FitLifeGreen,
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+
                 OutlinedTextField(
                     value = mealName,
                     onValueChange = { mealName = it },
-                    label = { Text("Meal Name (e.g. Breakfast)") },
+                    label = { Text("Meal Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -259,6 +279,7 @@ fun HomeScreen(userViewModel: UserViewModel) {
                         val model = CalorieModel(
                             userId = userId,
                             mealName = mealName,
+                            mealCategory = selectedCategory,
                             calorieGoal = calorieGoal,
                             protein = protein,
                             carbs = carbs,
@@ -388,7 +409,7 @@ fun ProgressScreen(userViewModel: UserViewModel) {
                 Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(data.date, fontSize = 12.sp, color = Color.Gray)
+                            Text("${data.date} • ${data.mealCategory}", fontSize = 12.sp, color = Color.Gray)
                             Text("${data.mealName}: ${data.totalCalories} kcal", fontWeight = FontWeight.Bold)
                             Text("P: ${data.protein}g | C: ${data.carbs}g | F: ${data.fat}g", fontSize = 12.sp, color = Color.Gray)
                         }
@@ -411,18 +432,31 @@ fun ProgressScreen(userViewModel: UserViewModel) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditMealDialog(meal: CalorieModel, onDismiss: () -> Unit, onUpdate: (CalorieModel) -> Unit) {
     var mealName by remember { mutableStateOf(meal.mealName) }
     var protein by remember { mutableStateOf(meal.protein) }
     var carbs by remember { mutableStateOf(meal.carbs) }
     var fat by remember { mutableStateOf(meal.fat) }
+    var selectedCategory by remember { mutableStateOf(meal.mealCategory) }
+    val categories = listOf("Breakfast", "Lunch", "Dinner", "Snack")
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Update Meal", color = FitLifeGreen) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text("Category", style = MaterialTheme.typography.labelMedium)
+                FlowRow(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    categories.forEach { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category, fontSize = 10.sp) }
+                        )
+                    }
+                }
                 OutlinedTextField(value = mealName, onValueChange = { mealName = it }, label = { Text("Meal Name") })
                 OutlinedTextField(value = protein, onValueChange = { protein = it }, label = { Text("Protein") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 OutlinedTextField(value = carbs, onValueChange = { carbs = it }, label = { Text("Carbs") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
@@ -435,7 +469,7 @@ fun EditMealDialog(meal: CalorieModel, onDismiss: () -> Unit, onUpdate: (Calorie
                 val c = carbs.toDoubleOrNull() ?: 0.0
                 val f = fat.toDoubleOrNull() ?: 0.0
                 val total = ((p * 4) + (c * 4) + (f * 9)).toInt().toString()
-                onUpdate(meal.copy(mealName = mealName, protein = protein, carbs = carbs, fat = fat, totalCalories = total))
+                onUpdate(meal.copy(mealName = mealName, mealCategory = selectedCategory, protein = protein, carbs = carbs, fat = fat, totalCalories = total))
             }, colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen)) {
                 Text("Update")
             }
