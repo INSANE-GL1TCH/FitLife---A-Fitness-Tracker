@@ -46,4 +46,5 @@ interface UserRepository {
     fun saveCalorieData(model: CalorieModel, callback: (Boolean, String) -> Unit)
     fun getCalorieDataByUserId(userId: String, callback: (Boolean, List<CalorieModel>?) -> Unit)
     fun deleteCalorieData(calorieId: String, callback: (Boolean, String) -> Unit)
+    fun updateCalorieData(calorieId: String, model: CalorieModel, callback: (Boolean, String) -> Unit)
 }
