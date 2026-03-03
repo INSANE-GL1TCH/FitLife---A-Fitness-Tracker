@@ -1,7 +1,5 @@
 package com.example.fitnessapp.view
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -26,12 +24,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +50,6 @@ class RegistrationActivity : ComponentActivity() {
 
 @Composable
 fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Unit) {
-
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -64,17 +59,15 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
 
     val context = LocalContext.current
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(LightGreen)) {
+    Box(modifier = Modifier.fillMaxSize().background(LightGreen)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding() // Improvement 1: Added imePadding
                 .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
             Image(painter = painterResource(id = R.drawable.img),
                 contentDescription = "FitLife Logo",
                 modifier = Modifier.size(150.dp).padding(bottom = 20.dp))
@@ -86,9 +79,10 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
 
             OutlinedTextField(
                 value = fullName,
-                onValueChange = { data -> fullName = data },
-                leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Full Name Icon") },
+                onValueChange = { fullName = it },
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 placeholder = { Text("Full Name") },
+                singleLine = true, // Improvement 2: Set singleLine
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = LightGray,
                     focusedContainerColor = LightGray,
@@ -103,9 +97,11 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { data -> email = data },
-                leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email Icon") },
+                onValueChange = { email = it },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 placeholder = { Text("example@gmail.com") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), // Improvement 3: Email Keyboard
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = LightGray,
                     focusedContainerColor = LightGray,
@@ -120,17 +116,16 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { data -> password = data },
+                onValueChange = { password = it },
                 placeholder = { Text("Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password Icon") },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { visibility = !visibility }) {
-                        Icon(
-                            imageVector = if (visibility) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = null
-                        )
+                        Icon(imageVector = if (visibility) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, contentDescription = null)
                     }
                 },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), // Improvement 4: Password Keyboard
                 visualTransformation = if (!visibility) PasswordVisualTransformation() else VisualTransformation.None,
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = LightGray,
@@ -146,17 +141,16 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
 
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { data -> confirmPassword = data },
+                onValueChange = { confirmPassword = it },
                 placeholder = { Text("Confirm Password") },
-                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password Icon") },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { confirmVisibility = !confirmVisibility }) {
-                        Icon(
-                            imageVector = if (confirmVisibility) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = null
-                        )
+                        Icon(imageVector = if (confirmVisibility) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, contentDescription = null)
                     }
                 },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), // Improvement 5: Password Keyboard
                 visualTransformation = if (!confirmVisibility) PasswordVisualTransformation() else VisualTransformation.None,
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = LightGray,
@@ -174,26 +168,22 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
                 onClick = {
                     if (password != confirmPassword) {
                         Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                    } else if (email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
+                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                     } else {
-                        userViewModel?.register(email, password) {
-                            success, message, userId ->
+                        userViewModel?.register(email, password) { success, message, userId ->
                             if (success) {
-                                val model = UserModel(
-                                    userId = userId.orEmpty(),
-                                    email = email,
-                                    firstName = fullName
-                                )
-                                userViewModel.addUserToDatabase(userId.orEmpty(), model) {
-                                    addSuccess, addMessage ->
+                                val model = UserModel(userId = userId.orEmpty(), email = email, firstName = fullName)
+                                userViewModel.addUserToDatabase(userId.orEmpty(), model) { addSuccess, addMessage ->
                                     if (addSuccess) {
-                                        Toast.makeText(context, addMessage, Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
                                         onRegistrationSuccess()
                                     } else {
-                                        Toast.makeText(context, addMessage, Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, addMessage, Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             } else {
-                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -202,23 +192,15 @@ fun RegisterBody(userViewModel: UserViewModel?, onRegistrationSuccess: () -> Uni
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen)
             ) {
-                Text("Sign In", fontSize = 18.sp)
+                Text("Sign Up", fontSize = 18.sp)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Row {
                 Text("Already have an account? ")
-                Text("Sign In", color = FitLifeGreen, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
-                    onRegistrationSuccess()
-                })
+                Text("Sign In", color = FitLifeGreen, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onRegistrationSuccess() })
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewRegister() {
-    RegisterBody(userViewModel = null, onRegistrationSuccess = {})
 }
