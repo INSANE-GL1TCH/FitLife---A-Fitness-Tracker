@@ -219,4 +219,14 @@ class UserRepositoryImpl : UserRepository {
             if (it.isSuccessful) callback(true, "Calorie record deleted") else callback(false, it.exception?.message ?: "Error")
         }
     }
+
+    override fun updateCalorieData(calorieId: String, model: CalorieModel, callback: (Boolean, String) -> Unit) {
+        calorieRef.child(calorieId).updateChildren(model.toMap()).addOnCompleteListener {
+            if (it.isSuccessful) {
+                callback(true, "Meal updated successfully")
+            } else {
+                callback(false, it.exception?.message ?: "Update failed")
+            }
+        }
+    }
 }
