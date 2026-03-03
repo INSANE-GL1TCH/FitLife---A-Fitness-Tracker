@@ -15,11 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -126,10 +122,17 @@ fun HomeScreen(userViewModel: UserViewModel) {
 
     var weight by remember { mutableStateOf("") }
     var height by remember { mutableStateOf("") }
+    
+    var mealName by remember { mutableStateOf("") }
     var protein by remember { mutableStateOf("") }
     var carbs by remember { mutableStateOf("") }
     var fat by remember { mutableStateOf("") }
     var calorieGoal by remember { mutableStateOf("2000") }
+
+    val calorieHistory by userViewModel.calorieData.observeAsState(emptyList())
+    val todayDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+    
+    val todayCalories = calorieHistory?.filter { it.date == todayDate }?.sumOf { it.totalCalories.toIntOrNull() ?: 0 } ?: 0
 
     val w = weight.toDoubleOrNull() ?: 0.0
     val h = (height.toDoubleOrNull() ?: 0.0) / 100.0
@@ -138,9 +141,10 @@ fun HomeScreen(userViewModel: UserViewModel) {
     val p = protein.toDoubleOrNull() ?: 0.0
     val c = carbs.toDoubleOrNull() ?: 0.0
     val f = fat.toDoubleOrNull() ?: 0.0
-    val calculatedCalories = (p * 4) + (c * 4) + (f * 9)
+    val mealCalories = (p * 4) + (c * 4) + (f * 9)
     val goal = calorieGoal.toDoubleOrNull() ?: 2000.0
-    val progress = if (goal > 0) (calculatedCalories / goal).coerceIn(0.0, 1.0).toFloat() else 0f
+    val totalIntake = todayCalories + mealCalories.toInt()
+    val progress = if (goal > 0) (totalIntake / goal).coerceIn(0.0, 1.0).toFloat() else 0f
 
     val bmiStatus = when {
         calculatedBmi <= 0 -> ""
@@ -150,6 +154,10 @@ fun HomeScreen(userViewModel: UserViewModel) {
         else -> "Obese"
     }
 
+    LaunchedEffect(Unit) {
+        userViewModel.getCurrentUser()?.uid?.let { userViewModel.getCalorieDataByUserId(it) }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -157,12 +165,14 @@ fun HomeScreen(userViewModel: UserViewModel) {
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Fitness Tracker", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
+        Text("FitLife Home", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
 
+        // BMI Section
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("BMI Calculator", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
@@ -191,9 +201,11 @@ fun HomeScreen(userViewModel: UserViewModel) {
                     Button(
                         onClick = {
                             val userId = userViewModel.getCurrentUser()?.uid ?: ""
-                            val date = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
+                            val date = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
                             val model = BmiModel(userId = userId, weight = weight, height = height, bmi = "%.2f".format(calculatedBmi), status = bmiStatus, date = date)
-                            userViewModel.saveBmiData(model) { success, msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                            userViewModel.saveBmiData(model) { success, msg -> 
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier.padding(top = 10.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen)
@@ -202,38 +214,68 @@ fun HomeScreen(userViewModel: UserViewModel) {
             }
         }
 
+        // Calories Section
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Calorie Tracker", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
+                Text("Daily Calorie Tracker", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text("Today's Total: $todayCalories / ${goal.toInt()} kcal", fontWeight = FontWeight.SemiBold)
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.fillMaxWidth().height(12.dp).padding(vertical = 8.dp),
+                    color = if (totalIntake <= goal) FitLifeGreen else Color.Red,
+                    trackColor = LightGreen
+                )
+                
                 OutlinedTextField(
                     value = calorieGoal,
                     onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) calorieGoal = it },
-                    label = { Text("Goal") },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    label = { Text("Daily Goal") },
+                    modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
-                Row {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text("Log a Meal", fontWeight = FontWeight.Bold, color = FitLifeGreen)
+                OutlinedTextField(
+                    value = mealName,
+                    onValueChange = { mealName = it },
+                    label = { Text("Meal Name (e.g. Breakfast)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(modifier = Modifier.padding(vertical = 8.dp)) {
                     OutlinedTextField(value = protein, onValueChange = { protein = it }, label = { Text("P") }, modifier = Modifier.weight(1f).padding(end = 4.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     OutlinedTextField(value = carbs, onValueChange = { carbs = it }, label = { Text("C") }, modifier = Modifier.weight(1f).padding(end = 4.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     OutlinedTextField(value = fat, onValueChange = { fat = it }, label = { Text("F") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-                LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth().height(8.dp), color = if (calculatedCalories <= goal) FitLifeGreen else Color.Red)
-                Text("${calculatedCalories.toInt()} / ${goal.toInt()} kcal", modifier = Modifier.padding(top = 4.dp))
+                Text("Meal Calories: ${mealCalories.toInt()} kcal")
                 Button(
                     onClick = {
                         val userId = userViewModel.getCurrentUser()?.uid ?: ""
-                        val date = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
-                        val model = CalorieModel(userId = userId, calorieGoal = calorieGoal, protein = protein, carbs = carbs, fat = fat, totalCalories = calculatedCalories.toInt().toString(), date = date)
-                        userViewModel.saveCalorieData(model) { success, msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                        val model = CalorieModel(
+                            userId = userId,
+                            mealName = mealName,
+                            calorieGoal = calorieGoal,
+                            protein = protein,
+                            carbs = carbs,
+                            fat = fat,
+                            totalCalories = mealCalories.toInt().toString(),
+                            date = todayDate
+                        )
+                        userViewModel.saveCalorieData(model) { success, msg -> 
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            if (success) {
+                                mealName = ""; protein = ""; carbs = ""; fat = ""
+                            }
+                        }
                     },
-                    modifier = Modifier.padding(top = 10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen)
-                ) { Text("Save Calories") }
+                ) { Text("Log Meal") }
             }
         }
     }
@@ -254,7 +296,7 @@ fun ExerciseScreen(userViewModel: UserViewModel) {
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("Exercise Recommendations", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
+        Text("Personalized Workouts", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = FitLifeGreen)
         Spacer(modifier = Modifier.height(10.dp))
         Text("Based on your last status: $status", fontSize = 16.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(20.dp))
@@ -280,6 +322,7 @@ fun ExerciseScreen(userViewModel: UserViewModel) {
 
 @Composable
 fun ProgressScreen(userViewModel: UserViewModel) {
+    val context = LocalContext.current
     val currentUser = userViewModel.getCurrentUser()
     val bmiHistoryState = userViewModel.bmiData.observeAsState(emptyList())
     val calorieHistoryState = userViewModel.calorieData.observeAsState(emptyList())
@@ -287,11 +330,30 @@ fun ProgressScreen(userViewModel: UserViewModel) {
     val bmiHistory = bmiHistoryState.value
     val calorieHistory = calorieHistoryState.value
 
+    var showEditDialog by remember { mutableStateOf(false) }
+    var selectedMeal by remember { mutableStateOf<CalorieModel?>(null) }
+
     LaunchedEffect(currentUser) {
         currentUser?.uid?.let { 
             userViewModel.getBmiDataByUserId(it)
             userViewModel.getCalorieDataByUserId(it)
         }
+    }
+
+    if (showEditDialog && selectedMeal != null) {
+        EditMealDialog(
+            meal = selectedMeal!!,
+            onDismiss = { showEditDialog = false },
+            onUpdate = { updatedMeal ->
+                userViewModel.updateCalorieData(updatedMeal.calorieId, updatedMeal) { success, msg ->
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    if (success) {
+                        showEditDialog = false
+                        currentUser?.uid?.let { userViewModel.getCalorieDataByUserId(it) }
+                    }
+                }
+            }
+        )
     }
 
     LazyColumn(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -306,7 +368,10 @@ fun ProgressScreen(userViewModel: UserViewModel) {
                             Text(data.date, fontSize = 12.sp, color = Color.Gray)
                             Text("BMI: ${data.bmi} (${data.status})", fontWeight = FontWeight.Bold)
                         }
-                        IconButton(onClick = { userViewModel.deleteBmiData(data.bmiId) { _, _ -> userViewModel.getBmiDataByUserId(currentUser?.uid ?: "") } }) {
+                        IconButton(onClick = { userViewModel.deleteBmiData(data.bmiId) { _, msg -> 
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            userViewModel.getBmiDataByUserId(currentUser?.uid ?: "") 
+                        } }) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                         }
                     }
@@ -324,9 +389,19 @@ fun ProgressScreen(userViewModel: UserViewModel) {
                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(data.date, fontSize = 12.sp, color = Color.Gray)
-                            Text("${data.totalCalories} kcal (Goal: ${data.calorieGoal})", fontWeight = FontWeight.Bold)
+                            Text("${data.mealName}: ${data.totalCalories} kcal", fontWeight = FontWeight.Bold)
+                            Text("P: ${data.protein}g | C: ${data.carbs}g | F: ${data.fat}g", fontSize = 12.sp, color = Color.Gray)
                         }
-                        IconButton(onClick = { userViewModel.deleteCalorieData(data.calorieId) { _, _ -> userViewModel.getCalorieDataByUserId(currentUser?.uid ?: "") } }) {
+                        IconButton(onClick = { 
+                            selectedMeal = data
+                            showEditDialog = true
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = FitLifeGreen)
+                        }
+                        IconButton(onClick = { userViewModel.deleteCalorieData(data.calorieId) { _, msg -> 
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            userViewModel.getCalorieDataByUserId(currentUser?.uid ?: "") 
+                        } }) {
                             Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                         }
                     }
@@ -337,6 +412,41 @@ fun ProgressScreen(userViewModel: UserViewModel) {
 }
 
 @Composable
+fun EditMealDialog(meal: CalorieModel, onDismiss: () -> Unit, onUpdate: (CalorieModel) -> Unit) {
+    var mealName by remember { mutableStateOf(meal.mealName) }
+    var protein by remember { mutableStateOf(meal.protein) }
+    var carbs by remember { mutableStateOf(meal.carbs) }
+    var fat by remember { mutableStateOf(meal.fat) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Update Meal", color = FitLifeGreen) },
+        text = {
+            Column {
+                OutlinedTextField(value = mealName, onValueChange = { mealName = it }, label = { Text("Meal Name") })
+                OutlinedTextField(value = protein, onValueChange = { protein = it }, label = { Text("Protein") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(value = carbs, onValueChange = { carbs = it }, label = { Text("Carbs") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(value = fat, onValueChange = { fat = it }, label = { Text("Fat") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val p = protein.toDoubleOrNull() ?: 0.0
+                val c = carbs.toDoubleOrNull() ?: 0.0
+                val f = fat.toDoubleOrNull() ?: 0.0
+                val total = ((p * 4) + (c * 4) + (f * 9)).toInt().toString()
+                onUpdate(meal.copy(mealName = mealName, protein = protein, carbs = carbs, fat = fat, totalCalories = total))
+            }, colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen)) {
+                Text("Update")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Color.Gray) }
+        }
+    )
+}
+
+@Composable
 fun ProfileScreen(onLogout: () -> Unit, onUpdateProfile: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(100.dp), tint = FitLifeGreen)
@@ -344,7 +454,7 @@ fun ProfileScreen(onLogout: () -> Unit, onUpdateProfile: () -> Unit) {
         Spacer(modifier = Modifier.height(40.dp))
         Button(onClick = onUpdateProfile, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = FitLifeGreen), shape = RoundedCornerShape(12.dp)) { Text("Update Profile") }
         Spacer(modifier = Modifier.height(16.dp))
-        OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp)) { Text("Logout", color = Color.Red) }
+        OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red)) { Text("Logout", color = Color.Red) }
     }
 }
 
