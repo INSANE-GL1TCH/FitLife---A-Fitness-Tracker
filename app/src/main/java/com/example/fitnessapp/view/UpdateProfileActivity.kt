@@ -85,6 +85,7 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(scrollState)
+                .imePadding() // Change 1: Added imePadding for better keyboard handling
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -94,6 +95,7 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Full Name") },
+                singleLine = true, // Change 2: Set singleLine to true
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -105,13 +107,14 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                 value = contact,
                 onValueChange = { contact = it },
                 label = { Text("Contact Number") },
+                singleLine = true, // Change 3: Set singleLine to true
                 leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-            Divider()
+            HorizontalDivider(thickness = 1.dp, color = LightGray) // Change 4: Replaced Divider with HorizontalDivider
             Spacer(modifier = Modifier.height(32.dp))
 
             Text("Security Settings", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp))
@@ -120,6 +123,7 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email Address") },
+                singleLine = true, // Change 5: Set singleLine to true
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -144,7 +148,6 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                 onClick = {
                     val userId = currentUser?.uid ?: ""
                     
-                    // 1. Update Database Info (Name, Contact)
                     val updatedModel = UserModel(
                         userId = userId,
                         email = email,
@@ -154,14 +157,12 @@ fun UpdateProfileScreen(userViewModel: UserViewModel, onBack: () -> Unit) {
                     
                     userViewModel.updateProfile(userId, updatedModel) { success, message ->
                         if (success) {
-                            // 2. Update Auth Email if changed
                             if (email != currentUser?.email) {
                                 userViewModel.updateEmail(email) { emailSuccess, emailMsg ->
                                     if (!emailSuccess) Toast.makeText(context, emailMsg, Toast.LENGTH_SHORT).show()
                                 }
                             }
                             
-                            // 3. Update Auth Password if provided
                             if (newPassword.isNotEmpty()) {
                                 userViewModel.updatePassword(newPassword) { passSuccess, passMsg ->
                                     if (!passSuccess) Toast.makeText(context, passMsg, Toast.LENGTH_SHORT).show()
