@@ -16,3 +16,4 @@ val LightGreen = Color(0xFFE8F5E9)
 val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)
 val LightGray = Color(0xFFF5F5F5)
+val WarningRed = Color(0xFFE74C3C) // New Warning Color
