@@ -121,4 +121,8 @@ class UserViewModel(val repo: UserRepository) : ViewModel() {
     fun deleteCalorieData(calorieId: String, callback: (Boolean, String) -> Unit) {
         repo.deleteCalorieData(calorieId, callback)
     }
+
+    fun updateCalorieData(calorieId: String, model: CalorieModel, callback: (Boolean, String) -> Unit) {
+        repo.updateCalorieData(calorieId, model, callback)
+    }
 }
