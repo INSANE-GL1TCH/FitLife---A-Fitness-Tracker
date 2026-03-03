@@ -8,8 +8,11 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.*
 
 class UserRepositoryImpl : UserRepository {
+    // Firebase service instances
     val auth: FirebaseAuth = FirebaseAuth.getInstance()
     val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    
+    // Database references
     val userRef: DatabaseReference = database.getReference("Users")
     val bmiRef: DatabaseReference = database.getReference("BmiData")
     val calorieRef: DatabaseReference = database.getReference("CalorieData")
